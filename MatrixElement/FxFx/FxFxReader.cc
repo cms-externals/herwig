@@ -379,12 +379,22 @@ long FxFxReader::scan() {
       else {
 	for ( int id = 0; id < heprup.NPRUP; ++id )  {
 	  //set the cross section directly from the event weights read
-	  heprup.XSECUP[id] = sumlprup[id]/nscanned[id];
-	  heprup.XERRUP[id] = (sumsqlprup[id]/nscanned[id] - sqr(sumlprup[id]/nscanned[id])) / nscanned[id];
+	  //need to find equivalent ID for the temp vectors
+	  std::vector<int>::const_iterator itlprup = std::find(lprup.begin(), lprup.end(), heprup.LPRUP[id]);
+ 	  if(itlprup == lprup.end()) {
+	    //No event was generated with this process
+	    heprup.XSECUP[id]=0;
+	    heprup.XERRUP[id]=0;
+	    heprup.XMAXUP[id]=0;
+	    continue;
+	  }
+	  size_t lprupID = itlprup - lprup.begin();
+	  heprup.XSECUP[id] = sumlprup[lprupID]/nscanned[lprupID];
+	  heprup.XERRUP[id] = (sumsqlprup[lprupID]/nscanned[lprupID] - sqr(sumlprup[lprupID]/nscanned[lprupID])) / nscanned[lprupID];
 	  if(fabs(heprup.XERRUP[id]) < 1e-10) { heprup.XERRUP[id] = 0; }
-	  if(fabs(newmax[id]) < 1e-10) { newmax[id] = 0; }
+	  if(fabs(newmax[lprupID]) < 1e-10) { newmax[lprupID] = 0; }
 	  if(heprup.XERRUP[id] < 0.) {
-	    if( heprup.XERRUP[id]/(sumsqlprup[id]/nscanned[id])>-1e-10)
+	    if( heprup.XERRUP[id]/(sumsqlprup[lprupID]/nscanned[lprupID])>-1e-10)
 	      heprup.XERRUP[id] = 0.;
 	    else {
 	      Throw<FxFxInitError>()
@@ -394,7 +404,7 @@ long FxFxReader::scan() {
 	    }
 	  }
 	  heprup.XERRUP[id] = sqrt( heprup.XERRUP[id] );
-	  heprup.XMAXUP[id] = newmax[id];
+	  heprup.XMAXUP[id] = newmax[lprupID];
 	  //cout << "heprup.XMAXUP[id] = " << heprup.XMAXUP[id]  << endl;
 	  sumxsec += heprup.XSECUP[id];
 	}
